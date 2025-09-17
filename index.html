@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BLE Scan • Client-only</title>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="toolbar">
+    <div class="left">
+      <button id="btnStart" class="primary">Scan starten</button>
+      <button id="btnStop" disabled>Scan stoppen</button>
+      <span id="supportBadge" class="badge">Support: prüfen…</span>
+    </div>
+    <div class="right">
+      <button id="btnExportJSON">Export JSON</button>
+      <button id="btnExportCSV">Export CSV</button>
+      <button id="btnClear" class="danger">Daten löschen</button>
+    </div>
+  </header>
+
+  <section class="filters">
+    <details>
+      <summary>Filter & Optionen</summary>
+      <div class="filters-grid">
+        <label>Gerätename (enthält)
+          <input type="text" id="fltName" placeholder="z. B. sensor">
+        </label>
+        <label>RSSI min (dBm)
+          <input type="number" id="fltRssiMin" value="-100" step="1">
+        </label>
+        <label>RSSI max (dBm)
+          <input type="number" id="fltRssiMax" value="-20" step="1">
+        </label>
+        <label>Von (ISO)
+          <input type="datetime-local" id="fltFrom">
+        </label>
+        <label>Bis (ISO)
+          <input type="datetime-local" id="fltTo">
+        </label>
+        <label class="check">
+          <input type="checkbox" id="chkHeatmap"> Heatmap anzeigen
+        </label>
+      </div>
+    </details>
+  </section>
+
+  <main class="layout">
+    <section class="table-wrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>Zeitstempel (UTC)</th>
+            <th>Gerätename</th>
+            <th>Service-UUIDs</th>
+            <th>RSSI (dBm)</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+          </tr>
+        </thead>
+        <tbody id="tblBody"></tbody>
+      </table>
+      <div id="empty" class="empty">Noch keine Einträge.</div>
+    </section>
+
+    <section class="map-wrap">
+      <div id="map"></div>
+      <div id="legend" class="legend hidden">
+        <div><span class="grad"></span> Heatmap: blau = schwach (~-90), rot = stark (~-30)</div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span id="status">Bereit.</span>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
