@@ -1,0 +1,15 @@
+export function applyFilters(records, { name, rssiMin, rssiMax, fromIso, toIso }) {
+  const nameLC = (name || '').trim().toLowerCase();
+  const fromT = fromIso ? Date.parse(fromIso) : null;
+  const toT   = toIso   ? Date.parse(toIso)   : null;
+
+  return records.filter(r => {
+    if (nameLC && !(r.deviceName || '').toLowerCase().includes(nameLC)) return false;
+    if (Number.isFinite(rssiMin) && Number.isFinite(r.rssi) && r.rssi < rssiMin) return false;
+    if (Number.isFinite(rssiMax) && Number.isFinite(r.rssi) && r.rssi > rssiMax) return false;
+    const t = Date.parse(r.timestamp);
+    if (fromT && !(t >= fromT)) return false;
+    if (toT   && !(t <= toT))   return false;
+    return true;
+  });
+}

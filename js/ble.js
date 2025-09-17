@@ -1,0 +1,129 @@
+// BLE Scanning with capability detection.
+// Mode A: requestLEScan (best) → advertisementreceived on navigator.bluetooth
+// Mode B: requestDevice + watchAdvertisements() → events for selected device only
+// Else: not supported.
+
+export class BLEScanner {
+  constructor(statusCb = ()=>{}, geoProvider = ()=>null, onRecord = ()=>{}) {
+    this.statusCb = statusCb;
+    this.geoProvider = geoProvider;
+    this.onRecord = onRecord;
+
+    this.mode = 'none';
+    this.active = false;
+
+    this._scan = null;       // for LE Scan
+    this._advHandler = null; // bound handler
+    this._device = null;     // for watchAdvertisements
+  }
+
+  getSupportSummary() {
+    const hasBLE = 'bluetooth' in navigator;
+    const hasLEScan = hasBLE && 'requestLEScan' in navigator.bluetooth;
+    const canWatch = hasBLE && BluetoothDevice && 'watchAdvertisements' in BluetoothDevice.prototype;
+    return { hasBLE, hasLEScan, canWatch };
+  }
+
+  _normalizeAdv(e) {
+    // e: BluetoothAdvertisingEvent or similar
+    const timestamp = new Date().toISOString();
+    const deviceName = e.device?.name || e.name || '';
+    const rssi = Number.isFinite(e.rssi) ? Math.trunc(e.rssi) : (Number.isFinite(e.device?.rssi) ? Math.trunc(e.device.rssi) : null);
+
+    // Try to collect UUIDs from different fields
+    const uuids = new Set();
+    if (Array.isArray(e.uuids)) e.uuids.forEach(u => uuids.add(String(u)));
+    if (e.device?.uuids && Array.isArray(e.device.uuids)) e.device.uuids.forEach(u => uuids.add(String(u)));
+    if (e.serviceData && typeof e.serviceData.forEach === 'function') {
+      e.serviceData.forEach((_, key) => uuids.add(String(key)));
+    }
+
+    const pos = this.geoProvider?.() || null;
+    const latitude  = pos?.lat ?? null;
+    const longitude = pos?.lng ?? null;
+
+    // Validate minimal fields
+    return {
+      timestamp,
+      deviceName,
+      serviceUUIDs: Array.from(uuids),
+      rssi: Number.isFinite(rssi) ? rssi : null,
+      latitude,
+      longitude
+    };
+  }
+
+  async start() {
+    if (this.active) return;
+    const sup = this.getSupportSummary();
+    if (!sup.hasBLE) throw new Error('Web Bluetooth nicht verfügbar.');
+
+    if (sup.hasLEScan) {
+      // Mode A
+      try {
+        this._scan = await navigator.bluetooth.requestLEScan({
+          acceptAllAdvertisements: true,
+          keepRepeatedDevices: true
+        });
+        this._advHandler = (e) => {
+          const rec = this._normalizeAdv(e);
+          // require at least RSSI or any UUID/name + coords optional
+          if (!rec.rssi && !rec.deviceName && rec.serviceUUIDs.length === 0) return;
+          this.onRecord(rec);
+        };
+        navigator.bluetooth.addEventListener('advertisementreceived', this._advHandler);
+        this.mode = 'lescan';
+        this.active = true;
+        this.statusCb('LE-Scan aktiv (requestLEScan).');
+        return;
+      } catch (e) {
+        this.statusCb(`LE-Scan nicht möglich: ${e.message}. Fallback wird versucht.`);
+      }
+    }
+
+    if (sup.canWatch) {
+      // Mode B
+      try {
+        const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+        this._device = device;
+        this._advHandler = (e) => {
+          const rec = this._normalizeAdv(e);
+          if (!rec.rssi && !rec.deviceName && rec.serviceUUIDs.length === 0) return;
+          this.onRecord(rec);
+        };
+        device.addEventListener('advertisementreceived', this._advHandler);
+        await device.watchAdvertisements();
+        this.mode = 'watch';
+        this.active = true;
+        this.statusCb(`Scan aktiv (watchAdvertisements) für ausgewähltes Gerät: ${device.name || '(kein Name)'}`);
+        return;
+      } catch (e) {
+        throw new Error(`Scan nicht möglich: ${e.message}`);
+      }
+    }
+
+    throw new Error('Scannen wird vom Browser nicht unterstützt (weder requestLEScan noch watchAdvertisements).');
+  }
+
+  async stop() {
+    if (!this.active) return;
+    try {
+      if (this.mode === 'lescan' && this._scan) {
+        this._scan.stop();
+        if (this._advHandler) {
+          navigator.bluetooth.removeEventListener('advertisementreceived', this._advHandler);
+        }
+      }
+      if (this.mode === 'watch' && this._device) {
+        try { this._device.unwatchAdvertisements && this._device.unwatchAdvertisements(); } catch {}
+        if (this._advHandler) {
+          this._device.removeEventListener('advertisementreceived', this._advHandler);
+        }
+      }
+    } finally {
+      this._scan = null; this._device = null; this._advHandler = null;
+      this.active = false; this.mode = 'none';
+      this.statusCb('Scan gestoppt.');
+    }
+  }
+}
