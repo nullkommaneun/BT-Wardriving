@@ -3,6 +3,8 @@
 .toolbar,.statusbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--border)}
 .statusbar{border-top:1px solid var(--border);border-bottom:none}
 .toolbar .left,.toolbar .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.status-counters{display:flex;gap:12px;padding:8px 12px;color:var(--muted);border-bottom:1px solid var(--border);background:#121622}
+.status-counters .counter{background:#0f141f;padding:6px 10px;border:1px solid var(--border);border-radius:8px}
 button{background:#222634;color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:10px;cursor:pointer}
 button.primary{background:var(--primary);color:#0b132b;border-color:transparent}
 button.danger{background:var(--danger);color:#fff;border-color:transparent}
