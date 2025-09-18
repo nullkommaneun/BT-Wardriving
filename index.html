@@ -6,7 +6,9 @@
   <title>BLE Scan • Fahrmodus</title>
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#0f1115"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -31,20 +33,73 @@
     <div class="counter">Rate: <b id="counterRate">0/min</b></div>
   </section>
 
+  <section class="filters">
+    <details open>
+      <summary>Filter & Optionen</summary>
+      <div class="filters-grid">
+        <label>Gerätename (enthält)
+          <input type="text" id="fltName" placeholder="z. B. sensor">
+        </label>
+        <label>RSSI min (dBm)
+          <input type="number" id="fltRssiMin" value="-100" step="1">
+        </label>
+        <label>RSSI max (dBm)
+          <input type="number" id="fltRssiMax" value="-20" step="1">
+        </label>
+        <label>Von (ISO)
+          <input type="datetime-local" id="fltFrom">
+        </label>
+        <label>Bis (ISO)
+          <input type="datetime-local" id="fltTo">
+        </label>
+        <label class="check">
+          <input type="checkbox" id="chkHeatmap"> Heatmap anzeigen
+        </label>
+        <label class="check">
+          <input type="checkbox" id="chkCluster" checked> Geräte-Cluster aktiv
+        </label>
+      </div>
+    </details>
+  </section>
+
   <main class="layout">
     <section class="table-wrap">
       <table id="tbl">
-        <thead><tr><th>Zeitstempel</th><th>Gerätename</th><th>UUIDs</th><th>RSSI</th><th>Lat</th><th>Lon</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Zeitstempel (UTC)</th>
+            <th>Gerätename</th>
+            <th>Service-UUIDs</th>
+            <th>RSSI (dBm)</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+          </tr>
+        </thead>
         <tbody id="tblBody"></tbody>
       </table>
       <div id="empty" class="empty">Noch keine Einträge.</div>
     </section>
-    <section class="map-wrap"><div id="map"></div></section>
+
+    <section class="map-wrap">
+      <div id="map"></div>
+      <div id="legend" class="legend hidden">
+        <div><span class="grad"></span> Heatmap: blau = schwach (~-90), rot = stark (~-30)</div>
+      </div>
+    </section>
   </main>
 
-  <footer class="statusbar"><span id="status">Bereit.</span></footer>
+  <footer class="statusbar">
+    <span id="status">Bereit.</span>
+  </footer>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js');
+    }
+  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
   <script type="module" src="./js/main.js"></script>
 </body>
